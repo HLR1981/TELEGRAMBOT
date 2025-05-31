@@ -1,13 +1,15 @@
 import sqlite3
+import os
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 from dotenv import load_dotenv
-import os
 
-# token
-BOT_TOKEN = "8036679211:AAHHjlFUZ4ZCPbdFAnQemL1-VkursnTGDTg" 
+# === Cargar variables de entorno (.env) ===
+load_dotenv()
+# Asegúrate de tener "token=TU_TOKEN" en tu archivo .env
+BOT_TOKEN = os.getenv("token")
 
-# === Inicializar base de datos ===
+# === Inicializar base de datos SQLite ===
 def init_db():
     conn = sqlite3.connect("usuarios.db")
     cursor = conn.cursor()
@@ -41,7 +43,7 @@ def obtener_usuarios():
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     guardar_usuario(user.id, user.full_name)
-    print(f"Nuevo usuario registrado: {user.id} - {user.full_name}")  # Útil para obtener tu ID
+    print(f"Nuevo usuario registrado: {user.id} - {user.full_name}")
     await update.message.reply_text("👋 Te has registrado para recibir mensajes del bot.")
 
 # === /notificar ===
@@ -64,16 +66,24 @@ async def notificar(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # === Main ===
 def main():
-    print("Iniciando el main")
-    # create the updater and pass it your bot's token.
-    load_dotenv()  #
-    token_telegram = os.environ['token']
-    updater = Application.builder().token(token_telegram).build()
+    print("Iniciando el bot...")
+
+    # Validar que el token exista
+    if not BOT_TOKEN:
+        raise ValueError("❌ No se encontró el token. Asegúrate de que el archivo .env tenga: token=TU_TOKEN")
+
     init_db()
+
+    # Crear la aplicación de Telegram
     app = Application.builder().token(BOT_TOKEN).build()
+
+    # Registrar comandos
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("notificar", notificar))
+
+    # Iniciar el bot
     app.run_polling()
 
 if __name__ == "__main__":
     main()
+    
