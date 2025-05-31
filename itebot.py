@@ -1,11 +1,11 @@
 import sqlite3
 from telegram import Update
-from telegram.ext import Application, CommandHandler, ContextTypes
+from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
 from dotenv import load_dotenv
 import os
 
-# token
-BOT_TOKEN = "8036679211:AAHHjlFUZ4ZCPbdFAnQemL1-VkursnTGDTg" 
+# === Token del bot ===
+BOT_TOKEN = "8036679211:AAHHjlFUZ4ZCPbdFAnQemL1-VkursnTGDTg"  # Opcional: puedes mover esto a .env si prefieres seguridad
 
 # === Inicializar base de datos ===
 def init_db():
@@ -41,7 +41,7 @@ def obtener_usuarios():
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     guardar_usuario(user.id, user.full_name)
-    print(f"Nuevo usuario registrado: {user.id} - {user.full_name}")  # Útil para obtener tu ID
+    print(f"Nuevo usuario registrado: {user.id} - {user.full_name}")
     await update.message.reply_text("👋 Te has registrado para recibir mensajes del bot.")
 
 # === /notificar ===
@@ -62,17 +62,28 @@ async def notificar(update: Update, context: ContextTypes.DEFAULT_TYPE):
             print(f"No se pudo enviar mensaje a {user_id}: {e}")
     await update.message.reply_text(f"✅ Mensaje enviado a {enviados} usuario(s).")
 
+# === Manejar mensajes normales ===
+async def manejar_mensaje(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    texto = update.message.text
+    print(f"Mensaje de {user.full_name} ({user.id}): {texto}")
+    await update.message.reply_text(f"📩 Recibí tu mensaje: '{texto}'")
+
 # === Main ===
 def main():
-    print("Iniciando el main")
-    # create the updater and pass it your bot's token.
-    load_dotenv()  #
-    token_telegram = os.environ['token']
-    updater = Application.builder().token(token_telegram).build()
+    print("Iniciando el bot...")
+    load_dotenv()
+    # Puedes usar el token del archivo .env si lo prefieres
+    # token_telegram = os.environ['token']  # Descomenta si usas .env
+    token_telegram = BOT_TOKEN
+
     init_db()
-    app = Application.builder().token(BOT_TOKEN).build()
+    app = Application.builder().token(token_telegram).build()
+
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("notificar", notificar))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar_mensaje))
+
     app.run_polling()
 
 if __name__ == "__main__":
